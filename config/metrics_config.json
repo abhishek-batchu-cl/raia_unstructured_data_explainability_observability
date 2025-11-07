@@ -1,0 +1,351 @@
+{
+  "version": "1.0.0",
+  "updated": "2025-01-15",
+  "metrics": [
+    {
+      "id": "task_success_rate",
+      "name": "Task Success Rate",
+      "description": "Percentage of runs completed successfully with all constraints met",
+      "formula": "(COUNT(finalized WHERE success=true AND constraints_met=true) / COUNT(finalized)) × 100",
+      "aggregation_window": "1d",
+      "required_events": ["finalized"],
+      "direction": "higher_is_better",
+      "thresholds": {
+        "critical": {"operator": "<", "value": 90},
+        "warning": {"operator": "<", "value": 95},
+        "target": {"operator": ">=", "value": 98}
+      },
+      "owner": "reliability_team",
+      "tags": ["quality", "success", "core_kpi"]
+    },
+    {
+      "id": "escalation_rate",
+      "name": "Escalation Rate",
+      "description": "Percentage of runs requiring escalation to humans or supervisor agents",
+      "formula": "(COUNT(DISTINCT session_id WHERE event='escalation') / COUNT(DISTINCT session_id WHERE event='finalized')) × 100",
+      "aggregation_window": "1d",
+      "required_events": ["escalation", "finalized"],
+      "direction": "lower_is_better",
+      "thresholds": {
+        "critical": {"operator": ">", "value": 30},
+        "warning": {"operator": ">", "value": 15},
+        "target": {"operator": "<", "value": 10}
+      },
+      "owner": "reliability_team",
+      "tags": ["escalation", "autonomy"],
+      "stratify_by": ["escalation_reason", "domain"]
+    },
+    {
+      "id": "safety_violation_rate",
+      "name": "Safety Violation Rate",
+      "description": "Percentage of runs flagged for safety or policy violations",
+      "formula": "(COUNT(DISTINCT session_id WHERE event='policy_flag' AND severity IN ('violation', 'critical')) / COUNT(DISTINCT session_id WHERE event='finalized')) × 100",
+      "aggregation_window": "1d",
+      "required_events": ["policy_flag", "finalized"],
+      "direction": "lower_is_better",
+      "thresholds": {
+        "critical": {"operator": ">", "value": 1},
+        "warning": {"operator": ">", "value": 0.1},
+        "target": {"operator": "==", "value": 0}
+      },
+      "owner": "safety_team",
+      "tags": ["safety", "compliance", "critical"],
+      "stratify_by": ["policy_id", "domain"]
+    },
+    {
+      "id": "constraint_adherence_rate",
+      "name": "Constraint Adherence Rate",
+      "description": "Percentage of runs that satisfied all declared constraints",
+      "formula": "(COUNT(finalized WHERE constraints_met=true) / COUNT(finalized)) × 100",
+      "aggregation_window": "1d",
+      "required_events": ["finalized", "session_start"],
+      "direction": "higher_is_better",
+      "thresholds": {
+        "critical": {"operator": "<", "value": 95},
+        "warning": {"operator": "<", "value": 98},
+        "target": {"operator": "==", "value": 100}
+      },
+      "owner": "quality_team",
+      "tags": ["quality", "constraints"]
+    },
+    {
+      "id": "grounded_claim_ratio",
+      "name": "Grounded Claim Ratio",
+      "description": "Percentage of observations backed by evidence references",
+      "formula": "(COUNT(observation WHERE grounded=true) / COUNT(observation)) × 100",
+      "aggregation_window": "1d",
+      "required_events": ["observation"],
+      "direction": "higher_is_better",
+      "thresholds": {
+        "critical": {"operator": "<", "value": 70},
+        "warning": {"operator": "<", "value": 85},
+        "target": {"operator": ">=", "value": 90}
+      },
+      "owner": "quality_team",
+      "tags": ["grounding", "evidence", "quality"]
+    },
+    {
+      "id": "evidence_missing_rate",
+      "name": "Evidence Missing Rate",
+      "description": "Percentage of successful observations lacking evidence refs",
+      "formula": "(COUNT(observation WHERE grounded=false AND success=true) / COUNT(observation WHERE success=true)) × 100",
+      "aggregation_window": "1d",
+      "required_events": ["observation"],
+      "direction": "lower_is_better",
+      "thresholds": {
+        "critical": {"operator": ">", "value": 30},
+        "warning": {"operator": ">", "value": 15},
+        "target": {"operator": "<", "value": 5}
+      },
+      "owner": "quality_team",
+      "tags": ["grounding", "evidence"]
+    },
+    {
+      "id": "wrong_tool_rate",
+      "name": "Wrong Tool Selection Rate",
+      "description": "Percentage of tool calls where used tool differs from expected",
+      "formula": "(COUNT(tool_call WHERE tool_name != expected_tool AND expected_tool IS NOT NULL) / COUNT(tool_call WHERE expected_tool IS NOT NULL)) × 100",
+      "aggregation_window": "1d",
+      "required_events": ["tool_call"],
+      "direction": "lower_is_better",
+      "thresholds": {
+        "critical": {"operator": ">", "value": 20},
+        "warning": {"operator": ">", "value": 10},
+        "target": {"operator": "<", "value": 5}
+      },
+      "owner": "agent_team",
+      "tags": ["tool_use", "efficiency"],
+      "stratify_by": ["tool_name", "graph_node"]
+    },
+    {
+      "id": "redundant_call_rate",
+      "name": "Redundant Tool Call Rate",
+      "description": "Percentage of duplicate tool calls with identical arguments",
+      "formula": "See canonical_metrics.md for complex self-join query",
+      "aggregation_window": "1d",
+      "required_events": ["tool_call"],
+      "direction": "lower_is_better",
+      "thresholds": {
+        "critical": {"operator": ">", "value": 25},
+        "warning": {"operator": ">", "value": 15},
+        "target": {"operator": "<", "value": 5}
+      },
+      "owner": "agent_team",
+      "tags": ["efficiency", "tool_use"]
+    },
+    {
+      "id": "backtrack_rate",
+      "name": "Backtrack Rate",
+      "description": "Percentage of runs requiring backtracking corrections",
+      "formula": "(COUNT(DISTINCT session_id WHERE event='correction' AND correction_type='backtrack') / COUNT(DISTINCT session_id WHERE event='finalized')) × 100",
+      "aggregation_window": "1d",
+      "required_events": ["correction", "finalized"],
+      "direction": "lower_is_better",
+      "thresholds": {
+        "critical": {"operator": ">", "value": 40},
+        "warning": {"operator": ">", "value": 25},
+        "target": {"operator": "<", "value": 15}
+      },
+      "owner": "agent_team",
+      "tags": ["planning", "reasoning"]
+    },
+    {
+      "id": "avg_plan_depth",
+      "name": "Average Plan Depth",
+      "description": "Mean number of steps in initial plans",
+      "formula": "AVG(plan_depth WHERE event='plan_created' AND revision_count=0)",
+      "aggregation_window": "1d",
+      "required_events": ["plan_created"],
+      "direction": "context_dependent",
+      "thresholds": {},
+      "owner": "agent_team",
+      "tags": ["planning"],
+      "stratify_by": ["agent_id", "domain"]
+    },
+    {
+      "id": "plan_revision_rate",
+      "name": "Plan Revision Rate",
+      "description": "Percentage of plans revised at least once",
+      "formula": "(COUNT(DISTINCT session_id WHERE event='plan_created' AND revision_count > 0) / COUNT(DISTINCT session_id WHERE event='plan_created')) × 100",
+      "aggregation_window": "1d",
+      "required_events": ["plan_created"],
+      "direction": "lower_is_better",
+      "thresholds": {
+        "critical": {"operator": ">", "value": 50},
+        "warning": {"operator": ">", "value": 30},
+        "target": {"operator": "<", "value": 20}
+      },
+      "owner": "agent_team",
+      "tags": ["planning", "efficiency"]
+    },
+    {
+      "id": "e2e_latency_p50",
+      "name": "End-to-End Latency (p50)",
+      "description": "Median time from session start to finalized",
+      "formula": "PERCENTILE(finalized.ts - session_start.ts, 0.50)",
+      "aggregation_window": "1h",
+      "required_events": ["session_start", "finalized"],
+      "direction": "lower_is_better",
+      "unit": "ms",
+      "thresholds": {},
+      "owner": "performance_team",
+      "tags": ["latency", "performance"]
+    },
+    {
+      "id": "e2e_latency_p95",
+      "name": "End-to-End Latency (p95)",
+      "description": "95th percentile time from session start to finalized",
+      "formula": "PERCENTILE(finalized.ts - session_start.ts, 0.95)",
+      "aggregation_window": "1h",
+      "required_events": ["session_start", "finalized"],
+      "direction": "lower_is_better",
+      "unit": "ms",
+      "thresholds": {
+        "critical": {"operator": ">", "value": 30000},
+        "warning": {"operator": ">", "value": 15000},
+        "target": {"operator": "<", "value": 10000}
+      },
+      "owner": "performance_team",
+      "tags": ["latency", "performance", "slo"]
+    },
+    {
+      "id": "step_latency_p95",
+      "name": "Step Latency (p95)",
+      "description": "95th percentile latency across all steps",
+      "formula": "PERCENTILE(latency_ms, 0.95)",
+      "aggregation_window": "1h",
+      "required_events": ["*"],
+      "direction": "lower_is_better",
+      "unit": "ms",
+      "thresholds": {},
+      "owner": "performance_team",
+      "tags": ["latency", "performance"],
+      "stratify_by": ["event", "tool_name"]
+    },
+    {
+      "id": "token_efficiency",
+      "name": "Token Efficiency",
+      "description": "Average tokens per successful task",
+      "formula": "SUM(token_usage.total_tokens) / COUNT(finalized WHERE success=true)",
+      "aggregation_window": "1d",
+      "required_events": ["*", "finalized"],
+      "direction": "lower_is_better",
+      "unit": "tokens",
+      "thresholds": {},
+      "owner": "cost_team",
+      "tags": ["cost", "efficiency"]
+    },
+    {
+      "id": "cost_per_success",
+      "name": "Cost per Success",
+      "description": "Average cost (USD) per successfully completed task",
+      "formula": "SUM(cost) / COUNT(finalized WHERE success=true)",
+      "aggregation_window": "1mo",
+      "required_events": ["*", "finalized"],
+      "direction": "lower_is_better",
+      "unit": "USD",
+      "thresholds": {},
+      "owner": "cost_team",
+      "tags": ["cost", "efficiency", "budget"]
+    },
+    {
+      "id": "retry_rate",
+      "name": "Retry Rate",
+      "description": "Percentage of tool calls that are retries",
+      "formula": "(COUNT(tool_call WHERE is_retry=true) / COUNT(tool_call)) × 100",
+      "aggregation_window": "1d",
+      "required_events": ["tool_call"],
+      "direction": "lower_is_better",
+      "thresholds": {
+        "critical": {"operator": ">", "value": 30},
+        "warning": {"operator": ">", "value": 15},
+        "target": {"operator": "<", "value": 10}
+      },
+      "owner": "reliability_team",
+      "tags": ["reliability", "tool_use"],
+      "stratify_by": ["tool_name"]
+    },
+    {
+      "id": "error_rate",
+      "name": "Error Rate",
+      "description": "Percentage of runs with unrecoverable errors",
+      "formula": "(COUNT(DISTINCT session_id WHERE event='error' AND recoverable=false) / COUNT(DISTINCT session_id WHERE event='session_start')) × 100",
+      "aggregation_window": "1h",
+      "required_events": ["error", "session_start"],
+      "direction": "lower_is_better",
+      "thresholds": {
+        "critical": {"operator": ">", "value": 5},
+        "warning": {"operator": ">", "value": 2},
+        "target": {"operator": "<", "value": 1}
+      },
+      "owner": "reliability_team",
+      "tags": ["reliability", "errors", "slo"],
+      "stratify_by": ["error_type"]
+    },
+    {
+      "id": "seed_stability",
+      "name": "Seed Stability",
+      "description": "Determinism score for identical inputs with same seed",
+      "formula": "1 - (COUNT(DISTINCT final_answer) / COUNT(session_id)) grouped by (agent_id, inputs, seed)",
+      "aggregation_window": "batch",
+      "required_events": ["session_start", "finalized"],
+      "direction": "higher_is_better",
+      "thresholds": {
+        "critical": {"operator": "<", "value": 0.7},
+        "warning": {"operator": "<", "value": 0.85},
+        "target": {"operator": ">=", "value": 0.95}
+      },
+      "owner": "quality_team",
+      "tags": ["reproducibility", "quality"]
+    },
+    {
+      "id": "observability_coverage",
+      "name": "Observability Coverage",
+      "description": "Percentage of agent steps emitting structured events",
+      "formula": "(COUNT(events WHERE event != 'session_start') / finalized.total_steps) × 100",
+      "aggregation_window": "1d",
+      "required_events": ["*", "finalized"],
+      "direction": "higher_is_better",
+      "thresholds": {
+        "critical": {"operator": "<", "value": 80},
+        "warning": {"operator": "<", "value": 90},
+        "target": {"operator": "==", "value": 100}
+      },
+      "owner": "platform_team",
+      "tags": ["observability", "instrumentation"]
+    }
+  ],
+  "composite_scores": [
+    {
+      "id": "agent_reliability_score",
+      "name": "Agent Reliability Score (ARS)",
+      "description": "Weighted composite of key reliability metrics",
+      "formula": "(0.35 × task_success_rate + 0.20 × (100 - escalation_rate) + 0.20 × (100 - safety_violation_rate) + 0.15 × (100 - error_rate) + 0.10 × constraint_adherence_rate) / 100",
+      "components": [
+        {"metric_id": "task_success_rate", "weight": 0.35},
+        {"metric_id": "escalation_rate", "weight": 0.20, "invert": true},
+        {"metric_id": "safety_violation_rate", "weight": 0.20, "invert": true},
+        {"metric_id": "error_rate", "weight": 0.15, "invert": true},
+        {"metric_id": "constraint_adherence_rate", "weight": 0.10}
+      ],
+      "target": 0.90,
+      "owner": "reliability_team",
+      "tags": ["composite", "reliability", "core_kpi"]
+    },
+    {
+      "id": "agent_efficiency_score",
+      "name": "Agent Efficiency Score (AES)",
+      "description": "Composite for cost and speed optimization",
+      "formula": "(0.40 × normalized_latency + 0.30 × normalized_token_efficiency + 0.20 × (100 - wrong_tool_rate) + 0.10 × (100 - redundant_call_rate)) / 100",
+      "components": [
+        {"metric_id": "e2e_latency_p95", "weight": 0.40, "normalize": true, "invert": true},
+        {"metric_id": "token_efficiency", "weight": 0.30, "normalize": true, "invert": true},
+        {"metric_id": "wrong_tool_rate", "weight": 0.20, "invert": true},
+        {"metric_id": "redundant_call_rate", "weight": 0.10, "invert": true}
+      ],
+      "target": 0.85,
+      "owner": "performance_team",
+      "tags": ["composite", "efficiency", "cost"]
+    }
+  ]
+}

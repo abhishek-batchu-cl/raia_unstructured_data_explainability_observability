@@ -1,0 +1,197 @@
+# RAIA Service Level Objectives (SLOs)
+# Based on industry best practices and error budget methodology
+
+slos:
+  # Reliability SLOs
+  - name: task_success_rate
+    description: "Percentage of agent tasks completed successfully"
+    target: 99.9  # 99.9% success rate
+    window: 28d
+    error_budget: 0.1  # 0.1% failure rate allowed
+    measurement:
+      metric: |
+        sum(rate(raia_events_stored_total{event_type="finalized", success="true"}[28d]))
+        /
+        sum(rate(raia_events_stored_total{event_type="finalized"}[28d]))
+      unit: percentage
+    alerting:
+      burn_rate_fast: 14.4  # Alert if consuming 5% of budget in 1h
+      burn_rate_slow: 2.0   # Alert if consuming 10% of budget in 6h
+    owner: reliability_team
+    business_impact: "High - directly affects end-user experience"
+
+  - name: safety_violation_rate
+    description: "Percentage of runs with safety/policy violations"
+    target: 99.99  # 99.99% violation-free
+    window: 28d
+    error_budget: 0.01
+    measurement:
+      metric: |
+        1 - (
+          count(raia_events_stored_total{event_type="policy_flag", severity=~"violation|critical"}[28d])
+          /
+          count(raia_events_stored_total{event_type="finalized"}[28d])
+        )
+      unit: percentage
+    alerting:
+      burn_rate_fast: 100  # Any violation triggers immediate alert
+    owner: safety_team
+    business_impact: "Critical - regulatory and reputational risk"
+    compliance_tags: ["HIPAA", "SOC2", "GDPR"]
+
+  # Performance SLOs
+  - name: p95_end_to_end_latency
+    description: "95th percentile end-to-end task completion latency"
+    target: 10000  # 10 seconds
+    window: 7d
+    measurement:
+      metric: |
+        histogram_quantile(0.95,
+          sum(rate(raia_e2e_latency_seconds_bucket[7d])) by (le)
+        )
+      unit: milliseconds
+    alerting:
+      threshold: 15000  # Alert if p95 > 15s for 5 minutes
+      duration: 5m
+    owner: performance_team
+    business_impact: "Medium - affects user satisfaction"
+
+  - name: ingestion_latency
+    description: "Time to ingest and store events (p95)"
+    target: 500  # 500ms
+    window: 1d
+    measurement:
+      metric: |
+        histogram_quantile(0.95,
+          sum(rate(raia_ingest_latency_seconds_bucket[1d])) by (le)
+        )
+      unit: milliseconds
+    alerting:
+      threshold: 1000  # Alert if p95 > 1s
+      duration: 5m
+    owner: platform_team
+    business_impact: "Low - internal metric, but affects observability"
+
+  # Availability SLOs
+  - name: ingestion_service_uptime
+    description: "Percentage of time ingestion service is available"
+    target: 99.9
+    window: 28d
+    error_budget: 0.1  # ~43 minutes downtime per month
+    measurement:
+      metric: |
+        avg_over_time(up{job="raia-ingestion"}[28d])
+      unit: percentage
+    alerting:
+      threshold: 0  # Alert immediately on downtime
+    owner: platform_team
+    business_impact: "High - no ingestion means no observability"
+
+  # Data Quality SLOs
+  - name: schema_validation_pass_rate
+    description: "Percentage of events passing schema validation"
+    target: 99.5
+    window: 7d
+    error_budget: 0.5
+    measurement:
+      metric: |
+        1 - (
+          sum(rate(raia_events_invalid_total{reason="schema"}[7d]))
+          /
+          sum(rate(raia_events_received_total[7d]))
+        )
+      unit: percentage
+    alerting:
+      burn_rate_fast: 10
+    owner: platform_team
+    business_impact: "Medium - data quality affects metric accuracy"
+
+  - name: observability_coverage
+    description: "Percentage of agent steps emitting events"
+    target: 95.0
+    window: 7d
+    measurement:
+      metric: |
+        avg(observability_coverage{deployment="prod"}[7d])
+      unit: percentage
+    alerting:
+      threshold: 85
+      duration: 1h
+    owner: platform_team
+    business_impact: "Medium - low coverage reduces debugging capability"
+
+# Error Budget Policy
+error_budget_policy:
+  description: |
+    Error budget is the acceptable amount of failure for a service.
+    When error budget is exhausted, focus shifts from feature development to reliability.
+
+  thresholds:
+    - name: healthy
+      remaining_budget_pct: ">= 50"
+      actions:
+        - "Normal operations"
+        - "Continue feature development"
+        - "Scheduled maintenance allowed"
+
+    - name: warning
+      remaining_budget_pct: "25-50"
+      actions:
+        - "Increase monitoring"
+        - "Review recent changes"
+        - "Delay non-critical deployments"
+
+    - name: critical
+      remaining_budget_pct: "< 25"
+      actions:
+        - "Freeze feature launches"
+        - "Focus on reliability improvements"
+        - "Daily SLO review meetings"
+        - "Postmortem required for violations"
+
+    - name: exhausted
+      remaining_budget_pct: "<= 0"
+      actions:
+        - "Complete feature freeze"
+        - "Emergency reliability sprint"
+        - "Executive escalation"
+        - "Root cause analysis for all incidents"
+
+  budget_reset: monthly  # Reset error budget monthly
+
+# SLO Reporting
+reporting:
+  dashboards:
+    - name: "RAIA SLO Overview"
+      url: "https://grafana.example.com/d/raia-slo"
+      panels:
+        - "Current SLO attainment vs target"
+        - "Error budget consumption rate"
+        - "Burn rate alerts"
+        - "Historical SLO trends"
+
+  reviews:
+    frequency: weekly
+    attendees:
+      - reliability_team
+      - platform_team
+      - product_team
+    agenda:
+      - "Review SLO attainment"
+      - "Error budget status"
+      - "Recent incidents affecting SLOs"
+      - "Proposed SLO adjustments"
+
+# Multi-tenancy SLOs
+tenant_slos:
+  description: "Per-tenant SLO tracking for enterprise customers"
+  enabled: true
+  custom_targets:
+    premium_tier:
+      task_success_rate: 99.95
+      p95_latency: 5000
+      support_response_time: "15m"
+    standard_tier:
+      task_success_rate: 99.9
+      p95_latency: 10000
+      support_response_time: "4h"

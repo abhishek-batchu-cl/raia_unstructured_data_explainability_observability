@@ -1,0 +1,166 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║   RAIA - Responsible AI Analytics & Agent Evaluation                 ║
+║   ================================================                 ║
+║                                                                   ║
+║   Complete, Production-Ready Framework for Evaluating AI Agents  ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+
+🚀 QUICK START (Choose One)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Option 1: Instant Demo (2 minutes)
+  ┌─────────────────────────────────────────────────────────────┐
+  │  $ ./quickstart.sh                                          │
+  │                                                             │
+  │  Automatically:                                             │
+  │  ✓ Installs SDK                                            │
+  │  ✓ Starts services                                         │
+  │  ✓ Runs demo agent                                         │
+  │  ✓ Computes metrics                                        │
+  └─────────────────────────────────────────────────────────────┘
+
+  Option 2: Tutorial (15 minutes)
+  ┌─────────────────────────────────────────────────────────────┐
+  │  $ cat TUTORIAL.md                                          │
+  │                                                             │
+  │  Step-by-step guide to:                                    │
+  │  • Install & configure SDK                                 │
+  │  • Integrate with LangGraph agent                          │
+  │  • Emit events automatically                               │
+  │  • View metrics & dashboards                               │
+  └─────────────────────────────────────────────────────────────┘
+
+  Option 3: How It Works (Visual)
+  ┌─────────────────────────────────────────────────────────────┐
+  │  $ cat HOW_IT_WORKS.md                                      │
+  │                                                             │
+  │  Visual diagrams showing:                                  │
+  │  • Event flow from agent → metrics                         │
+  │  • What happens behind the scenes                          │
+  │  • Real-world examples                                     │
+  └─────────────────────────────────────────────────────────────┘
+
+
+📚 KEY DOCUMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  GETTING_STARTED.md     → Integration checklist & FAQs
+  README.md              → Framework overview & architecture
+  TUTORIAL.md            → Hands-on LangGraph walkthrough
+  HOW_IT_WORKS.md        → Visual flow diagrams
+  VERIFICATION.md        → Working examples & verification
+
+
+📂 DIRECTORY STRUCTURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  schemas/               → Event definitions & examples
+  config/                → Metrics configuration
+  sdk/python/            → Python SDK (production-ready)
+  sdk/typescript/        → TypeScript SDK (browser + Node)
+  services/ingestion/    → FastAPI ingestion service
+  tools/                 → Replay & compute CLI
+  observability/         → Prometheus alerts, SLO definitions
+  deploy/kubernetes/     → K8s manifests
+  docs/                  → Detailed documentation
+
+
+💡 WHAT YOU GET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✓ 22 Canonical Metrics (success rate, latency, cost, etc.)
+  ✓ Real-Time Observability (Prometheus + Grafana)
+  ✓ Enterprise Security (encryption, redaction, RBAC)
+  ✓ Compliance Ready (HIPAA, GDPR, SOC 2)
+  ✓ Production SDKs (Python + TypeScript)
+  ✓ Scalable Ingestion (5k+ events/sec per pod)
+  ✓ Deterministic Replay (reproducible evaluations)
+  ✓ CI/CD Integration (quality gates)
+
+
+🎯 TYPICAL WORKFLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  1. Start Services
+     └─ ./quickstart.sh  OR  docker-compose up
+
+  2. Integrate SDK
+     └─ Add 5 lines to your agent code:
+        from raia import EventEmitter, EmitterConfig
+        emitter = EventEmitter(config)
+        emitter.emit({"event": "session_start", ...})
+
+  3. Run Your Agent
+     └─ Events automatically collected & validated
+
+  4. View Metrics
+     └─ python tools/replay_compute.py events.ndjson
+
+  5. Set Alerts
+     └─ kubectl apply -f observability/prometheus_alerts.yaml
+
+
+📊 SAMPLE OUTPUT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  === Computed Metrics ===
+  task_success_rate:           95.00%  ✓
+  escalation_rate:              5.00%
+  safety_violation_rate:        0.00%  ✓
+  constraint_adherence_rate:  100.00%  ✓
+  grounded_claim_ratio:        98.00%
+  wrong_tool_rate:              3.00%
+  e2e_latency_p95:          2,345.67ms
+  cost_per_success:           $0.023
+
+
+🔒 SECURITY FEATURES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ✓ TLS 1.2+ encryption
+  ✓ API key authentication
+  ✓ HMAC signature verification
+  ✓ PII/PHI automatic redaction
+  ✓ RBAC with tenant isolation
+  ✓ Audit logging (7-year retention)
+  ✓ Data residency controls
+
+
+❓ NEED HELP?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Troubleshooting:     GETTING_STARTED.md → Common Questions
+  Integration:         TUTORIAL.md → Step-by-step guide
+  Architecture:        HOW_IT_WORKS.md → Visual diagrams
+  Security:            docs/security_compliance.md
+  Metrics:             docs/canonical_metrics.md
+  Scaling:             docs/deployment_scaling.md
+
+
+🚀 NEXT STEPS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  For first-time users:
+    → Run:  ./quickstart.sh
+
+  For LangGraph developers:
+    → Read: TUTORIAL.md
+
+  For production deployment:
+    → Review: docs/security_compliance.md
+    → Deploy: deploy/kubernetes/
+
+  For understanding internals:
+    → Read: HOW_IT_WORKS.md
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Ready to get started?
+  
+  $ ./quickstart.sh
+  
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

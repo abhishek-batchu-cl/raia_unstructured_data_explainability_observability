@@ -1,0 +1,523 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raia.ai/schemas/event/v1.0.0",
+  "title": "Responsible AI Analytics & Agent Evaluation - Event Schema",
+  "description": "Standardized event schema for agentic system runtime telemetry. All events share a common base and extend with type-specific fields.",
+  "version": "1.0.0",
+  "oneOf": [
+    {"$ref": "#/$defs/SessionStartEvent"},
+    {"$ref": "#/$defs/PlanCreatedEvent"},
+    {"$ref": "#/$defs/ToolCallEvent"},
+    {"$ref": "#/$defs/ObservationEvent"},
+    {"$ref": "#/$defs/CritiqueEvent"},
+    {"$ref": "#/$defs/CorrectionEvent"},
+    {"$ref": "#/$defs/EscalationEvent"},
+    {"$ref": "#/$defs/FinalizedEvent"},
+    {"$ref": "#/$defs/ErrorEvent"},
+    {"$ref": "#/$defs/PolicyFlagEvent"}
+  ],
+  "$defs": {
+    "BaseEvent": {
+      "type": "object",
+      "required": [
+        "event",
+        "event_id",
+        "ts",
+        "session_id",
+        "run_id",
+        "agent_id",
+        "env"
+      ],
+      "properties": {
+        "event": {
+          "type": "string",
+          "enum": [
+            "session_start",
+            "plan_created",
+            "tool_call",
+            "observation",
+            "critique",
+            "correction",
+            "escalation",
+            "finalized",
+            "error",
+            "policy_flag"
+          ],
+          "description": "Event type discriminator"
+        },
+        "event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for this event (UUIDv4)"
+        },
+        "ts": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp with timezone (UTC preferred)"
+        },
+        "session_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for the entire user session"
+        },
+        "run_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique identifier for this agent execution run within the session"
+        },
+        "agent_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9_-]+$",
+          "description": "Identifier for the agent type/version (e.g., 'medical-triage-v2.1')"
+        },
+        "graph_node": {
+          "type": "string",
+          "description": "Current node in the agent graph (for LangGraph compatibility)"
+        },
+        "parent_event_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "ID of the parent event (for causal chains)"
+        },
+        "inputs": {
+          "type": "object",
+          "description": "Structured inputs to this step (may be redacted)",
+          "additionalProperties": true
+        },
+        "outputs": {
+          "type": "object",
+          "description": "Structured outputs from this step (may be redacted)",
+          "additionalProperties": true
+        },
+        "latency_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Execution time in milliseconds"
+        },
+        "token_usage": {
+          "type": "object",
+          "properties": {
+            "prompt_tokens": {"type": "integer", "minimum": 0},
+            "completion_tokens": {"type": "integer", "minimum": 0},
+            "total_tokens": {"type": "integer", "minimum": 0}
+          },
+          "additionalProperties": false
+        },
+        "cost": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Estimated cost in USD for this step"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "id"],
+            "properties": {
+              "source": {"type": "string", "description": "Source system (e.g., 'pubmed', 'internal_kb', 'tool:search')"},
+              "id": {"type": "string", "description": "Document or chunk ID"},
+              "relevance_score": {"type": "number", "minimum": 0, "maximum": 1}
+            }
+          },
+          "description": "References to evidence used (for grounding metrics)"
+        },
+        "policy_tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "pii",
+              "phi",
+              "financial",
+              "confidential",
+              "public",
+              "internal",
+              "safety_critical",
+              "regulatory",
+              "audit_required"
+            ]
+          },
+          "description": "Data classification and policy tags"
+        },
+        "redaction": {
+          "type": "object",
+          "properties": {
+            "applied": {"type": "boolean"},
+            "fields": {"type": "array", "items": {"type": "string"}},
+            "rule_ids": {"type": "array", "items": {"type": "string"}}
+          },
+          "description": "Redaction metadata if PII/PHI scrubbing was applied"
+        },
+        "env": {
+          "type": "object",
+          "required": [
+            "sdk_version",
+            "schema_version",
+            "tenant",
+            "project"
+          ],
+          "properties": {
+            "sdk_version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "SDK semantic version"
+            },
+            "schema_version": {
+              "type": "string",
+              "pattern": "^\\d+\\.\\d+\\.\\d+$",
+              "description": "Event schema version"
+            },
+            "llm": {
+              "type": "string",
+              "description": "LLM provider and model (e.g., 'openai/gpt-4', 'anthropic/claude-3-opus')"
+            },
+            "llm_version": {
+              "type": "string",
+              "description": "Specific model version/snapshot ID"
+            },
+            "seed": {
+              "type": "integer",
+              "description": "Random seed for reproducibility"
+            },
+            "temperature": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "tenant": {
+              "type": "string",
+              "pattern": "^[a-z0-9_-]+$",
+              "description": "Tenant identifier for multi-tenancy isolation"
+            },
+            "project": {
+              "type": "string",
+              "pattern": "^[a-z0-9_-]+$",
+              "description": "Project identifier within tenant"
+            },
+            "region": {
+              "type": "string",
+              "pattern": "^[a-z0-9-]+$",
+              "description": "Data residency region (e.g., 'us-east-1', 'eu-west-1')"
+            },
+            "deployment": {
+              "type": "string",
+              "enum": ["dev", "staging", "prod"],
+              "description": "Deployment environment"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "SessionStartEvent": {
+      "allOf": [
+        {"$ref": "#/$defs/BaseEvent"},
+        {
+          "type": "object",
+          "properties": {
+            "event": {"const": "session_start"},
+            "user_id": {
+              "type": "string",
+              "description": "User identifier (hashed if PII)"
+            },
+            "task": {
+              "type": "string",
+              "description": "High-level task description"
+            },
+            "domain": {
+              "type": "string",
+              "enum": ["healthcare", "insurance", "banking", "retail", "public_sector", "general"],
+              "description": "Application domain"
+            },
+            "constraints": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "Explicit constraints or requirements"
+            }
+          },
+          "required": ["event", "user_id", "task", "domain"]
+        }
+      ]
+    },
+    "PlanCreatedEvent": {
+      "allOf": [
+        {"$ref": "#/$defs/BaseEvent"},
+        {
+          "type": "object",
+          "properties": {
+            "event": {"const": "plan_created"},
+            "plan": {
+              "type": "object",
+              "required": ["steps"],
+              "properties": {
+                "steps": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["id", "description"],
+                    "properties": {
+                      "id": {"type": "string"},
+                      "description": {"type": "string"},
+                      "tool": {"type": "string"},
+                      "dependencies": {
+                        "type": "array",
+                        "items": {"type": "string"}
+                      }
+                    }
+                  }
+                },
+                "rationale": {"type": "string"}
+              }
+            },
+            "plan_depth": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of steps in plan"
+            },
+            "revision_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "How many times this plan was revised"
+            }
+          },
+          "required": ["event", "plan", "plan_depth"]
+        }
+      ]
+    },
+    "ToolCallEvent": {
+      "allOf": [
+        {"$ref": "#/$defs/BaseEvent"},
+        {
+          "type": "object",
+          "properties": {
+            "event": {"const": "tool_call"},
+            "tool_name": {
+              "type": "string",
+              "description": "Name of the tool being invoked"
+            },
+            "tool_args": {
+              "type": "object",
+              "description": "Arguments passed to the tool (may be redacted)",
+              "additionalProperties": true
+            },
+            "expected_tool": {
+              "type": "string",
+              "description": "Tool that should have been called per plan (for wrong tool metric)"
+            },
+            "is_retry": {
+              "type": "boolean",
+              "description": "Whether this is a retry of a previous failed call"
+            },
+            "retry_count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["event", "tool_name", "tool_args"]
+        }
+      ]
+    },
+    "ObservationEvent": {
+      "allOf": [
+        {"$ref": "#/$defs/BaseEvent"},
+        {
+          "type": "object",
+          "properties": {
+            "event": {"const": "observation"},
+            "observation": {
+              "type": "string",
+              "description": "Raw observation from tool or environment"
+            },
+            "success": {
+              "type": "boolean",
+              "description": "Whether the tool call succeeded"
+            },
+            "error_type": {
+              "type": "string",
+              "enum": ["timeout", "auth", "rate_limit", "validation", "server_error", "not_found", "other"]
+            },
+            "grounded": {
+              "type": "boolean",
+              "description": "Whether observation is backed by evidence_refs"
+            }
+          },
+          "required": ["event", "observation", "success"]
+        }
+      ]
+    },
+    "CritiqueEvent": {
+      "allOf": [
+        {"$ref": "#/$defs/BaseEvent"},
+        {
+          "type": "object",
+          "properties": {
+            "event": {"const": "critique"},
+            "critique_text": {
+              "type": "string",
+              "description": "Self-critique or reflection"
+            },
+            "issues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["type", "description"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": ["factual_error", "missing_evidence", "constraint_violation", "wrong_tool", "incomplete", "inefficiency"]
+                  },
+                  "description": {"type": "string"},
+                  "severity": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high", "critical"]
+                  }
+                }
+              }
+            }
+          },
+          "required": ["event", "critique_text", "issues"]
+        }
+      ]
+    },
+    "CorrectionEvent": {
+      "allOf": [
+        {"$ref": "#/$defs/BaseEvent"},
+        {
+          "type": "object",
+          "properties": {
+            "event": {"const": "correction"},
+            "correction_type": {
+              "type": "string",
+              "enum": ["backtrack", "replan", "retry_tool", "add_evidence", "refine_output"]
+            },
+            "corrected_event_id": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Event ID being corrected"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": ["event", "correction_type", "corrected_event_id"]
+        }
+      ]
+    },
+    "EscalationEvent": {
+      "allOf": [
+        {"$ref": "#/$defs/BaseEvent"},
+        {
+          "type": "object",
+          "properties": {
+            "event": {"const": "escalation"},
+            "escalation_reason": {
+              "type": "string",
+              "enum": ["uncertainty", "safety_concern", "constraint_violation", "missing_capability", "timeout", "high_stakes"]
+            },
+            "escalation_target": {
+              "type": "string",
+              "enum": ["human", "supervisor_agent", "expert_agent"]
+            },
+            "context": {
+              "type": "string",
+              "description": "Explanation provided to escalation target"
+            }
+          },
+          "required": ["event", "escalation_reason", "escalation_target"]
+        }
+      ]
+    },
+    "FinalizedEvent": {
+      "allOf": [
+        {"$ref": "#/$defs/BaseEvent"},
+        {
+          "type": "object",
+          "properties": {
+            "event": {"const": "finalized"},
+            "final_answer": {
+              "type": "string",
+              "description": "Final answer or output (may be redacted)"
+            },
+            "success": {
+              "type": "boolean",
+              "description": "Whether task was completed successfully"
+            },
+            "constraints_met": {
+              "type": "boolean",
+              "description": "Whether all constraints were satisfied"
+            },
+            "total_steps": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "total_tool_calls": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": ["event", "success"]
+        }
+      ]
+    },
+    "ErrorEvent": {
+      "allOf": [
+        {"$ref": "#/$defs/BaseEvent"},
+        {
+          "type": "object",
+          "properties": {
+            "event": {"const": "error"},
+            "error_type": {
+              "type": "string",
+              "enum": ["llm_error", "tool_error", "validation_error", "timeout", "resource_exhausted", "internal_error"]
+            },
+            "error_message": {
+              "type": "string"
+            },
+            "recoverable": {
+              "type": "boolean"
+            },
+            "stack_trace": {
+              "type": "string",
+              "description": "Stack trace (should be redacted in prod)"
+            }
+          },
+          "required": ["event", "error_type", "error_message"]
+        }
+      ]
+    },
+    "PolicyFlagEvent": {
+      "allOf": [
+        {"$ref": "#/$defs/BaseEvent"},
+        {
+          "type": "object",
+          "properties": {
+            "event": {"const": "policy_flag"},
+            "policy_id": {
+              "type": "string",
+              "description": "Identifier for the violated policy"
+            },
+            "severity": {
+              "type": "string",
+              "enum": ["info", "warning", "violation", "critical"]
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description of the policy flag"
+            },
+            "violated_event_id": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "auto_action": {
+              "type": "string",
+              "enum": ["none", "flag", "block", "redact", "escalate"],
+              "description": "Automated action taken"
+            }
+          },
+          "required": ["event", "policy_id", "severity", "description"]
+        }
+      ]
+    }
+  }
+}

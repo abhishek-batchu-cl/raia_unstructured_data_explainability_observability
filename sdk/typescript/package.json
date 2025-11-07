@@ -1,0 +1,50 @@
+{
+  "name": "@raia/sdk",
+  "version": "1.0.0",
+  "description": "Enterprise Agentic Evaluation Framework - TypeScript/JavaScript SDK",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && rollup -c",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "eaef",
+    "evaluation",
+    "agents",
+    "langchain",
+    "observability",
+    "telemetry"
+  ],
+  "author": "EAEF Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "prettier": "^3.0.0",
+    "rollup": "^4.0.0",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/eaef/typescript-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/eaef/typescript-sdk/issues"
+  }
+}
