@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # Test runner - runs the unified test suite
+  raia-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: raia-tests
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    working_dir: /app
+    command: pytest raia/tests/ -v --tb=short
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - RAIA_TENANT=default
+      - RAIA_PROJECT=test
+      - RAIA_AGENT_ID=test_agent
+
+  # Interactive shell for development
+  raia-shell:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: raia-shell
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./raia/examples:/app/examples
+    working_dir: /app
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - RAIA_TENANT=default
+      - RAIA_PROJECT=demo
+      - RAIA_AGENT_ID=demo_agent
+
+  # Example runner - runs demo scripts
+  raia-examples:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: raia-examples
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./raia/examples:/app/examples
+    working_dir: /app
+    command: >
+      /bin/bash -c "
+      echo '========================================';
+      echo 'RAIA Unified Library - Examples';
+      echo '========================================';
+      echo '';
+      echo 'Running LangChain example...';
+      python /app/raia/examples/example_langchain_usage.py || echo 'Note: Requires langchain';
+      echo '';
+      echo '========================================';
+      echo 'Running LangGraph example...';
+      python /app/raia/examples/example_langgraph_usage.py || echo 'Note: Requires langgraph';
+      echo '';
+      echo '========================================';
+      echo 'Examples complete!';
+      echo 'Check ./data/ for generated databases';
+      echo 'Check ./logs/ for event logs';
+      "
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+      - RAIA_TENANT=default
+      - RAIA_PROJECT=examples
+      - RAIA_AGENT_ID=example_agent
+
+volumes:
+  data:
+  logs:

@@ -1,0 +1,91 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raia-inspectors"
+version = "1.0.0"
+description = "Behavior & Performance Analysis for AI Agents (LangChain/LangGraph)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "RAIA Team", email = "noreply@raia.ai"}
+]
+keywords = [
+    "ai",
+    "agents",
+    "observability",
+    "langchain",
+    "langgraph",
+    "evaluation",
+    "metrics",
+    "performance"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+langchain = [
+    "langchain>=0.1.0",
+]
+langgraph = [
+    "langgraph>=0.0.1",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+all = [
+    "langchain>=0.1.0",
+    "langgraph>=0.0.1",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/raia"
+Documentation = "https://github.com/yourusername/raia/tree/main/raia_inspectors"
+Repository = "https://github.com/yourusername/raia"
+Issues = "https://github.com/yourusername/raia/issues"
+
+[tool.setuptools]
+packages = ["raia_inspectors", "raia_inspectors.storage", "raia_inspectors.integration", "raia_inspectors.tests"]
+
+[tool.setuptools.package-data]
+raia_inspectors = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --strict-markers"
+
+[tool.coverage.run]
+source = ["raia_inspectors"]
+omit = ["*/tests/*", "*/examples/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]

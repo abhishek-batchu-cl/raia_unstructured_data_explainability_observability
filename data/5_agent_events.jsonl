@@ -1,0 +1,22 @@
+{"event": "session_start", "timestamp": "2025-11-13T17:09:37.978214", "run_id": "run_1763033977", "query": "Impact of AI agents in enterprise automation"}
+{"event": "node_start", "timestamp": "2025-11-13T17:09:37.978221", "run_id": "run_1763033977", "node_name": "planner", "iteration": 0}
+{"event": "node_end", "timestamp": "2025-11-13T17:09:38.284631", "run_id": "run_1763033977", "node_name": "planner", "latency_ms": 304.5189380645752, "tokens": 200, "iteration": 0}
+{"event": "node_start", "timestamp": "2025-11-13T17:09:38.284654", "run_id": "run_1763033977", "node_name": "researcher", "iteration": 0}
+{"event": "node_end", "timestamp": "2025-11-13T17:09:39.091637", "run_id": "run_1763033977", "node_name": "researcher", "latency_ms": 805.048942565918, "tokens": 480, "iteration": 0}
+{"event": "node_start", "timestamp": "2025-11-13T17:09:39.091686", "run_id": "run_1763033977", "node_name": "analyst", "iteration": 0}
+{"event": "node_end", "timestamp": "2025-11-13T17:09:39.694625", "run_id": "run_1763033977", "node_name": "analyst", "latency_ms": 600.5778312683105, "tokens": 360, "iteration": 0}
+{"event": "node_start", "timestamp": "2025-11-13T17:09:39.694691", "run_id": "run_1763033977", "node_name": "critic", "iteration": 0}
+{"event": "node_end", "timestamp": "2025-11-13T17:09:40.100061", "run_id": "run_1763033977", "node_name": "critic", "latency_ms": 403.7799835205078, "tokens": 130, "iteration": 0}
+{"event": "node_start", "timestamp": "2025-11-13T17:09:40.100093", "run_id": "run_1763033977", "node_name": "reporter", "iteration": 0}
+{"event": "node_end", "timestamp": "2025-11-13T17:09:40.603125", "run_id": "run_1763033977", "node_name": "reporter", "latency_ms": 500.1950263977051, "tokens": 280, "iteration": 0}
+{"event": "node_start", "timestamp": "2025-11-13T17:09:40.603221", "run_id": "run_1763033977", "node_name": "planner", "iteration": 1}
+{"event": "node_end", "timestamp": "2025-11-13T17:09:40.905450", "run_id": "run_1763033977", "node_name": "planner", "latency_ms": 300.54211616516113, "tokens": 200, "iteration": 1}
+{"event": "node_start", "timestamp": "2025-11-13T17:09:40.905483", "run_id": "run_1763033977", "node_name": "researcher", "iteration": 1}
+{"event": "node_end", "timestamp": "2025-11-13T17:09:41.710221", "run_id": "run_1763033977", "node_name": "researcher", "latency_ms": 802.4899959564209, "tokens": 480, "iteration": 1}
+{"event": "node_start", "timestamp": "2025-11-13T17:09:41.710288", "run_id": "run_1763033977", "node_name": "analyst", "iteration": 1}
+{"event": "node_end", "timestamp": "2025-11-13T17:09:42.317481", "run_id": "run_1763033977", "node_name": "analyst", "latency_ms": 605.0539016723633, "tokens": 360, "iteration": 1}
+{"event": "node_start", "timestamp": "2025-11-13T17:09:42.317541", "run_id": "run_1763033977", "node_name": "critic", "iteration": 1}
+{"event": "node_end", "timestamp": "2025-11-13T17:09:42.723904", "run_id": "run_1763033977", "node_name": "critic", "latency_ms": 405.0881862640381, "tokens": 130, "iteration": 1}
+{"event": "node_start", "timestamp": "2025-11-13T17:09:42.723932", "run_id": "run_1763033977", "node_name": "reporter", "iteration": 1}
+{"event": "node_end", "timestamp": "2025-11-13T17:09:43.228063", "run_id": "run_1763033977", "node_name": "reporter", "latency_ms": 503.21030616760254, "tokens": 280, "iteration": 1}
+{"event": "finalized", "timestamp": "2025-11-13T17:09:43.230597", "run_id": "run_1763033977", "success": true, "latency_ms": 5251.940965652466}
