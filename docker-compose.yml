@@ -1,81 +1,260 @@
 version: '3.8'
 
+################################################################################
+# RAIA - Complete Full-Stack Application with All Services
+#
+# Services included:
+# - PostgreSQL (Database)
+# - Redis (Caching)
+# - Backend (FastAPI)
+# - Frontend (React + Nginx)
+# - Prometheus (Metrics)
+# - Grafana (Dashboards)
+#
+# Quick start: docker-compose up -d
+################################################################################
+
 services:
-  # Test runner - runs the unified test suite
-  raia-tests:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: raia-tests
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-    working_dir: /app
-    command: pytest raia/tests/ -v --tb=short
+  # ============================================================================
+  # PostgreSQL Database
+  # ============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: raia-postgres
+    restart: unless-stopped
     environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-      - RAIA_TENANT=default
-      - RAIA_PROJECT=test
-      - RAIA_AGENT_ID=test_agent
-
-  # Interactive shell for development
-  raia-shell:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: raia-shell
+      POSTGRES_DB: ${POSTGRES_DB:-raia}
+      POSTGRES_USER: ${POSTGRES_USER:-raia_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-raia_secure_password_2025}
+      PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - ./raia/examples:/app/examples
-    working_dir: /app
-    stdin_open: true
-    tty: true
-    command: /bin/bash
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-      - RAIA_TENANT=default
-      - RAIA_PROJECT=demo
-      - RAIA_AGENT_ID=demo_agent
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-raia_user} -d ${POSTGRES_DB:-raia}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - raia-network
 
-  # Example runner - runs demo scripts
-  raia-examples:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: raia-examples
+  # ============================================================================
+  # Redis Cache
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: raia-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-raia_redis_password}
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-      - ./raia/examples:/app/examples
-    working_dir: /app
-    command: >
-      /bin/bash -c "
-      echo '========================================';
-      echo 'RAIA Unified Library - Examples';
-      echo '========================================';
-      echo '';
-      echo 'Running LangChain example...';
-      python /app/raia/examples/example_langchain_usage.py || echo 'Note: Requires langchain';
-      echo '';
-      echo '========================================';
-      echo 'Running LangGraph example...';
-      python /app/raia/examples/example_langgraph_usage.py || echo 'Note: Requires langgraph';
-      echo '';
-      echo '========================================';
-      echo 'Examples complete!';
-      echo 'Check ./data/ for generated databases';
-      echo 'Check ./logs/ for event logs';
-      "
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-      - RAIA_TENANT=default
-      - RAIA_PROJECT=examples
-      - RAIA_AGENT_ID=example_agent
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - raia-network
 
+  # ============================================================================
+  # Backend API (FastAPI)
+  # ============================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: raia-backend
+    restart: unless-stopped
+    environment:
+      # Database
+      DATABASE_TYPE: postgresql
+      DATABASE_URL: postgresql://${POSTGRES_USER:-raia_user}:${POSTGRES_PASSWORD:-raia_secure_password_2025}@postgres:5432/${POSTGRES_DB:-raia}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-raia}
+      POSTGRES_USER: ${POSTGRES_USER:-raia_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-raia_secure_password_2025}
+
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD:-raia_redis_password}@redis:6379/0
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-raia_redis_password}
+      ENABLE_CACHING: "true"
+
+      # Authentication
+      SECRET_KEY: ${SECRET_KEY:-raia_super_secret_key_change_in_production_2025}
+      ENABLE_AUTH: "true"
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+
+      # CORS
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://frontend:5173}
+
+      # Application
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      WORKERS: ${WORKERS:-4}
+
+      # Features
+      ENABLE_MONITORING: "true"
+      ENABLE_WEBSOCKET: "true"
+      ENABLE_NOTIFICATIONS: "true"
+      ENABLE_AUDIT_LOGGING: "true"
+
+      # Email notifications (optional)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      FROM_EMAIL: ${FROM_EMAIL:-noreply@raia.com}
+
+      # Slack notifications (optional)
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+
+      # Webhook notifications (optional)
+      WEBHOOK_URL: ${WEBHOOK_URL:-}
+    volumes:
+      - ./backend/logs:/app/logs
+      - ./backend/data:/app/data
+      - ./backend/backups:/app/backups
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - raia-network
+
+  # ============================================================================
+  # Frontend (React + Nginx)
+  # ============================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: raia-frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:8000}
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5173/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - raia-network
+
+  # ============================================================================
+  # Prometheus (Metrics Collection)
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: raia-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - raia-network
+
+  # ============================================================================
+  # Grafana (Visualization Dashboards)
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: raia-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: ${GRAFANA_PLUGINS:-}
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:3000}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/raia-dashboard.json:/etc/grafana/provisioning/dashboards/raia-dashboard.json
+      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - raia-network
+
+  # ============================================================================
+  # Node Exporter (System Metrics) - Optional
+  # ============================================================================
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: raia-node-exporter
+    restart: unless-stopped
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "${NODE_EXPORTER_PORT:-9100}:9100"
+    networks:
+      - raia-network
+
+################################################################################
+# Networks
+################################################################################
+networks:
+  raia-network:
+    driver: bridge
+    name: raia-network
+
+################################################################################
+# Volumes (Persistent Data)
+################################################################################
 volumes:
-  data:
-  logs:
+  postgres_data:
+    name: raia-postgres-data
+  redis_data:
+    name: raia-redis-data
+  prometheus_data:
+    name: raia-prometheus-data
+  grafana_data:
+    name: raia-grafana-data

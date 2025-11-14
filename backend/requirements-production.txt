@@ -1,0 +1,72 @@
+# RAIA Enterprise - Production Requirements
+# ==========================================
+
+# Core FastAPI dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-multipart==0.0.6
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+PyJWT==2.8.0
+
+# Database - PostgreSQL
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
+alembic==1.13.0
+
+# Database - SQLite (fallback)
+# Built-in with Python
+
+# Caching - Redis
+redis==5.0.1
+hiredis==2.2.3
+
+# Monitoring - Prometheus
+prometheus-client==0.19.0
+
+# Monitoring - System
+psutil==5.9.6
+
+# HTTP & async
+httpx==0.25.2
+aiohttp==3.9.1
+
+# Data processing
+numpy==1.26.2
+pandas==2.1.4
+
+# Date/Time
+python-dateutil==2.8.2
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Logging
+python-json-logger==2.0.7
+
+# CORS
+python-multipart==0.0.6
+
+# Rate limiting (optional, using custom implementation)
+slowapi==0.1.9
+
+# Email (for notifications)
+fastapi-mail==1.4.1
+
+# Background tasks
+celery==5.3.4
+flower==2.0.1
+
+# WebSocket support
+websockets==12.0
+
+# Validation
+email-validator==2.1.0
+
+# Production server
+gunicorn==21.2.0

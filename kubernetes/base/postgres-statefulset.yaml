@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: raia-postgres
+  labels:
+    app: raia-postgres
+spec:
+  serviceName: raia-postgres
+  replicas: 1  # Primary + read replicas in production
+  selector:
+    matchLabels:
+      app: raia-postgres
+  template:
+    metadata:
+      labels:
+        app: raia-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          envFrom:
+            - secretRef:
+                name: postgres-secrets
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U $POSTGRES_USER
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U $POSTGRES_USER
+            initialDelaySeconds: 5
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: fast-ssd  # Use SSD for database
+        resources:
+          requests:
+            storage: 100Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: raia-postgres
+  labels:
+    app: raia-postgres
+spec:
+  ports:
+    - port: 5432
+      name: postgres
+  clusterIP: None
+  selector:
+    app: raia-postgres
+
+---
+# PostgreSQL Read Replica (for scaling reads)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: raia-postgres-read
+  labels:
+    app: raia-postgres-read
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: raia-postgres-read
+  template:
+    metadata:
+      labels:
+        app: raia-postgres-read
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres-secrets
+          env:
+            - name: POSTGRES_REPLICATION_MODE
+              value: "slave"
+            - name: POSTGRES_MASTER_HOST
+              value: "raia-postgres-0.raia-postgres"
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: raia-postgres-read
+  labels:
+    app: raia-postgres-read
+spec:
+  ports:
+    - port: 5432
+      name: postgres
+  selector:
+    app: raia-postgres-read

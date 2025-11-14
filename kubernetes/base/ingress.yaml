@@ -1,0 +1,148 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: raia-ingress
+  annotations:
+    # NGINX Ingress Controller annotations
+    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+
+    # SSL/TLS configuration
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+    # Rate limiting
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+    nginx.ingress.kubernetes.io/limit-connections: "20"
+
+    # CORS
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://raia.yourcompany.com"
+
+    # WebSocket support
+    nginx.ingress.kubernetes.io/websocket-services: "raia-backend"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+    # Security headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: SAMEORIGIN";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+
+    # Request size limits
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+
+    # DDoS protection
+    nginx.ingress.kubernetes.io/limit-whitelist: "10.0.0.0/8"
+spec:
+  tls:
+    - hosts:
+        - raia.yourcompany.com
+        - api.raia.yourcompany.com
+      secretName: raia-tls-cert
+  rules:
+    # Frontend
+    - host: raia.yourcompany.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: raia-frontend
+                port:
+                  number: 80
+
+    # Backend API
+    - host: api.raia.yourcompany.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: raia-backend
+                port:
+                  number: 8000
+
+          # WebSocket endpoint
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: raia-backend
+                port:
+                  number: 8000
+
+---
+# Network Policy for security
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: raia-backend-netpol
+spec:
+  podSelector:
+    matchLabels:
+      app: raia-backend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow from frontend
+    - from:
+        - podSelector:
+            matchLabels:
+              app: raia-frontend
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow from ingress controller
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+  egress:
+    # Allow to PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              app: raia-postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    # Allow to Redis
+    - to:
+        - podSelector:
+            matchLabels:
+              app: raia-redis
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Allow to RabbitMQ
+    - to:
+        - podSelector:
+            matchLabels:
+              app: raia-rabbitmq
+      ports:
+        - protocol: TCP
+          port: 5672
+    # Allow DNS
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+    # Allow external HTTPS (for API calls)
+    - to:
+        - podSelector: {}
+      ports:
+        - protocol: TCP
+          port: 443
